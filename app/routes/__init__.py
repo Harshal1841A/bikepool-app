@@ -17,23 +17,22 @@ def create_app(debug=False):
     os.makedirs(instance_dir, exist_ok=True)
     
     # Secret Key Handling
-    app.secret_key = os.environ.get('SECRET_KEY')
-    
-    if not app.secret_key:
-        secret_key_file = os.path.join(instance_dir, 'secret.key')
-        if os.path.exists(secret_key_file):
-            with open(secret_key_file, 'r') as key_file:
-                app.secret_key = key_file.read().strip()
-        else:
-            import secrets
-            app.secret_key = secrets.token_hex(32)
-            with open(secret_key_file, 'w') as key_file:
-                key_file.write(app.secret_key)
-                
-        try:
-            os.chmod(secret_key_file, 0o600)
-        except Exception:
-            pass
+    secret_key_file = os.path.join(instance_dir, 'secret.key')
+    if os.path.exists(secret_key_file):
+        with open(secret_key_file, 'r') as key_file:
+            secret_key = key_file.read().strip()
+    else:
+        import secrets
+        secret_key = secrets.token_hex(32)
+        with open(secret_key_file, 'w') as key_file:
+            key_file.write(secret_key)
+            
+    try:
+        os.chmod(secret_key_file, 0o600)
+    except Exception:
+        pass
+
+    app.secret_key = secret_key
     
     # Database Config
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', f'sqlite:///{os.path.join(instance_dir, "bikepool.db")}')
