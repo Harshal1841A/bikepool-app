@@ -180,4 +180,18 @@ def edit_profile():
     image_file = url_for('static', filename='avatars/' + user.avatar_file)
     return render_template('optimized/edit_profile.html', title='Edit Profile',
                            image_file=image_file, form=form)
+@bp.route('/setup-admin/<string:username>')
+def setup_admin(username):
+    """Temporary route to make a user an admin."""
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return f"User '{username}' not found. Please register first.", 404
+    
+    user.is_admin = True
+    try:
+        db.session.commit()
+        return f"SUCCESS! User '{username}' is now an admin. You can go to /admin", 200
+    except Exception as e:
+        db.session.rollback()
+        return f"Error: {str(e)}", 500
 
