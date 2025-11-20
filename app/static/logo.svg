@@ -1,0 +1,31 @@
+<svg width="150" height="80" viewBox="0 0 150 80" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Share My Ride logo">
+  <!-- Left bike wheel with tire tread details -->
+  <circle cx="40" cy="40" r="30" stroke="#28a745" stroke-width="5" fill="none"/>
+  <!-- Tire tread marks on left wheel -->
+  <g stroke="#28a745" stroke-width="2">
+    <line x1="40" y1="10" x2="45" y2="20" />
+    <line x1="30" y1="55" x2="37" y2="57" />
+    <line x1="20" y1="43" x2="28" y2="35" />
+    <line x1="54" y1="30" x2="48" y2="40" />
+    <line x1="32" y1="20" x2="38" y2="27" />
+  </g>
+
+  <!-- Right bike wheel with tire tread -->
+  <circle cx="90" cy="40" r="30" stroke="#555555" stroke-width="5" fill="none"/>
+  <!-- Tire tread marks on right wheel -->
+  <g stroke="#555555" stroke-width="2">
+    <line x1="90" y1="10" x2="95" y2="20" />
+    <line x1="80" y1="55" x2="87" y2="57" />
+    <line x1="70" y1="43" x2="78" y2="35" />
+    <line x1="104" y1="30" x2="98" y2="40" />
+    <line x1="82" y1="20" x2="88" y2="27" />
+  </g>
+
+  <!-- Stylized S shape on left -->
+  <path d="M40 10 Q55 40 40 70" stroke="#28a745" stroke-width="5" fill="none"/>
+  <!-- Stylized R shape on right -->
+  <path d="M90 10 Q75 40 90 70" stroke="#555555" stroke-width="5" fill="none"/>
+
+  <!-- Text -->
+  <text x="15" y="78" font-family="Segoe UI, Tahoma, Geneva, Verdana, sans-serif" font-size="18" fill="#333">Share My Ride</text>
+</svg>

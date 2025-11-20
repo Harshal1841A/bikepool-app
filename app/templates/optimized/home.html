@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Share My Ride</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:700,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body>
+  <header>
+    <img src="{{ url_for('static', filename='logo.svg') }}" alt="Share My Ride logo" />
+    <nav>
+      <a href="{{ url_for('auth.login') }}">Login</a>
+      <a href="{{ url_for('auth.register') }}">Register</a>
+    </nav>
+  </header>
+  <main class="container home-container animate-fade-in-up">
+    <div class="logo-circle">
+      <img src="{{ url_for('static', filename='logo.svg') }}" alt="Share My Ride logo" />
+    </div>
+    <h1>Welcome to Share My Ride 🏍️</h1>
+    <p class="tagline"
+      style="font-size: var(--font-size-lg); color: var(--color-neutral-600); margin-bottom: var(--space-8);">"Where
+      Every Ride Finds a Companion"</p>
+    <a class="btn btn-primary" href="{{ url_for('auth.register') }}"
+      style="font-size: var(--font-size-lg); padding: var(--space-4) var(--space-8);">
+      <i class="fas fa-rocket"></i> Get Started
+    </a>
+  </main>
+</body>
+
+</html>

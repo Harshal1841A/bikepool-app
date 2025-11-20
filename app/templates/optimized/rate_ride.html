@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rate Ride - Share My Ride</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:700,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    .rate-ride-container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .rate-header {
+      text-align: center;
+      margin-bottom: var(--space-6);
+      padding-bottom: var(--space-4);
+      border-bottom: 2px solid var(--color-neutral-200);
+    }
+
+    .rate-header h1 {
+      font-size: var(--font-size-2xl);
+      margin: 0 0 var(--space-2) 0;
+      color: var(--color-neutral-800);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-3);
+    }
+
+    .ride-info-card {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+      color: white;
+      padding: var(--space-4);
+      border-radius: var(--border-radius-lg);
+      margin-bottom: var(--space-6);
+      box-shadow: var(--shadow-md);
+    }
+
+    .ride-route {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+
+    .rating-form {
+      background: white;
+      padding: var(--space-6);
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .form-group {
+      margin-bottom: var(--space-4);
+    }
+
+    .form-label {
+      display: block;
+      font-weight: var(--font-weight-bold);
+      margin-bottom: var(--space-2);
+      color: var(--color-neutral-800);
+      font-size: var(--font-size-base);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .form-label i {
+      color: var(--color-primary);
+      font-size: var(--font-size-lg);
+    }
+
+    #rating {
+      width: 100%;
+      padding: var(--space-3);
+      border: 2px solid var(--color-neutral-200);
+      border-radius: var(--border-radius-lg);
+      font-size: var(--font-size-base);
+      font-family: var(--font-family);
+      background: white;
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+
+    #rating:hover {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(56, 161, 105, 0.1);
+    }
+
+    #rating:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(56, 161, 105, 0.2);
+    }
+
+    #comments {
+      width: 100%;
+      padding: var(--space-3);
+      border: 2px solid var(--color-neutral-200);
+      border-radius: var(--border-radius-lg);
+      font-size: var(--font-size-base);
+      font-family: var(--font-family);
+      resize: vertical;
+      min-height: 120px;
+      transition: all var(--transition-base);
+    }
+
+    #comments:hover {
+      border-color: var(--color-primary);
+    }
+
+    #comments:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(56, 161, 105, 0.1);
+    }
+
+    #comments::placeholder {
+      color: var(--color-neutral-400);
+    }
+
+    .button-group {
+      display: flex;
+      gap: var(--space-3);
+      margin-top: var(--space-6);
+    }
+
+    .submit-btn {
+      flex: 1;
+      background: var(--color-primary);
+      color: white;
+      padding: var(--space-4);
+      border: none;
+      border-radius: var(--border-radius-lg);
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-bold);
+      cursor: pointer;
+      transition: all var(--transition-base);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+    }
+
+    .submit-btn:hover {
+      background: var(--color-primary-dark);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .submit-btn:disabled {
+      background: var(--color-neutral-400);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .back-btn {
+      flex: 1;
+      background: var(--color-neutral-200);
+      color: var(--color-neutral-800);
+      padding: var(--space-4);
+      border: none;
+      border-radius: var(--border-radius-lg);
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-bold);
+      cursor: pointer;
+      transition: all var(--transition-base);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      text-decoration: none;
+    }
+
+    .back-btn:hover {
+      background: var(--color-neutral-300);
+      transform: translateY(-2px);
+    }
+
+    .success-message {
+      background: rgba(72, 187, 120, 0.1);
+      border-left: 4px solid var(--color-success);
+      padding: var(--space-4);
+      border-radius: var(--border-radius-lg);
+      margin-bottom: var(--space-4);
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+    }
+
+    .success-message i {
+      color: var(--color-success);
+      font-size: var(--font-size-xl);
+    }
+
+    .error-message {
+      background: rgba(229, 62, 62, 0.1);
+      border-left: 4px solid var(--color-error);
+      padding: var(--space-4);
+      border-radius: var(--border-radius-lg);
+      margin-bottom: var(--space-4);
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+    }
+
+    .error-message i {
+      color: var(--color-error);
+      font-size: var(--font-size-xl);
+    }
+
+    @media (max-width: 768px) {
+      .button-group {
+        flex-direction: column;
+      }
+
+      .ride-route {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="{{ url_for('static', filename='logo.svg') }}" alt="Share My Ride logo" />
+    <nav>
+      <a href="{{ url_for('main.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="{{ url_for('main.notifications') }}">
+        <i class="fas fa-bell"></i> Notifications
+      </a>
+      <a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </nav>
+  </header>
+
+  <main class="container rate-ride-container animate-fade-in-up">
+    <div class="rate-header">
+      <h1><i class="fas fa-star"></i> Rate Your Ride</h1>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          {% if category == 'success' %}
+            <div class="success-message">
+              <i class="fas fa-check-circle"></i>
+              <div>{{ message }}</div>
+            </div>
+          {% elif category == 'error' %}
+            <div class="error-message">
+              <i class="fas fa-exclamation-circle"></i>
+              <div>{{ message }}</div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="ride-info-card">
+      <p class="ride-route">
+        <strong><i class="fas fa-map-marker-alt"></i> {{ ride.source }}</strong>
+        <i class="fas fa-arrow-right"></i>
+        <strong><i class="fas fa-map-marker-alt"></i> {{ ride.destination }}</strong>
+      </p>
+    </div>
+
+    <div class="rating-form">
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+        <div class="form-group">
+          <label for="rating" class="form-label">
+            <i class="fas fa-star"></i> How was your ride experience?
+          </label>
+          <select id="rating" name="rating" required>
+            <option value="">-- Select a rating --</option>
+            <option value="5">⭐⭐⭐⭐⭐ Excellent - Highly recommend!</option>
+            <option value="4">⭐⭐⭐⭐ Good - Would ride again</option>
+            <option value="3">⭐⭐⭐ Average - It was okay</option>
+            <option value="2">⭐⭐ Poor - Had some issues</option>
+            <option value="1">⭐ Terrible - Very disappointed</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="comments" class="form-label">
+            <i class="fas fa-comment"></i> Comments (optional)
+          </label>
+          <textarea 
+            id="comments" 
+            name="comments" 
+            placeholder="Share your experience... (e.g., driver was friendly, route was scenic, etc.)"
+          ></textarea>
+        </div>
+
+        <div class="button-group">
+          <button type="submit" class="submit-btn">
+            <i class="fas fa-check-circle"></i>
+            Submit Rating
+          </button>
+          <a href="{{ url_for('main.dashboard') }}" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            Back to Dashboard
+          </a>
+        </div>
+      </form>
+    </div>
+  </main>
+</body>
+</html>

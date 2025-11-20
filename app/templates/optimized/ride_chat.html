@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chat for Ride - Share My Ride</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:700,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <style>
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: var(--border-radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .chat-header {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+      color: white;
+      padding: var(--space-4);
+      text-align: center;
+      border-bottom: 3px solid var(--color-primary-dark);
+    }
+
+    .chat-header h2 {
+      margin: 0 0 var(--space-2) 0;
+      font-size: var(--font-size-xl);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+    }
+
+    .chat-header h3 {
+      margin: 0;
+      font-size: var(--font-size-base);
+      opacity: 0.95;
+      font-weight: var(--font-weight-normal);
+    }
+
+    .chat-route {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+    }
+
+    #chat-box {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      background: var(--color-neutral-50);
+    }
+
+    .msg {
+      display: flex;
+      flex-direction: column;
+      max-width: 70%;
+      animation: messageSlideIn 0.3s ease-out;
+    }
+
+    .msg.self {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+
+    .msg.other {
+      align-self: flex-start;
+      align-items: flex-start;
+    }
+
+    .msg.pending {
+      opacity: 0.7;
+    }
+
+    .sender {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-bold);
+      margin-bottom: var(--space-1);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .msg.self .sender {
+      color: var(--color-primary);
+    }
+
+    .msg.other .sender {
+      color: var(--color-secondary);
+    }
+
+    .message_text {
+      background: white;
+      padding: var(--space-3);
+      border-radius: var(--border-radius-lg);
+      word-wrap: break-word;
+      line-height: 1.5;
+      font-size: var(--font-size-base);
+      color: var(--color-neutral-800);
+      border: 1px solid var(--color-neutral-200);
+    }
+
+    .msg.self .message_text {
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      border-bottom-right-radius: var(--border-radius-sm);
+    }
+
+    .msg.other .message_text {
+      background: white;
+      border-bottom-left-radius: var(--border-radius-sm);
+    }
+
+    .timestamp {
+      font-size: var(--font-size-xs);
+      color: var(--color-neutral-400);
+      margin-top: var(--space-1);
+    }
+
+    .msg.self .timestamp {
+      text-align: right;
+    }
+
+    .msg.pending .timestamp::after {
+      content: ' ✓';
+      animation: pulse 1s infinite;
+    }
+
+    .empty-chat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      color: var(--color-neutral-400);
+    }
+
+    .empty-chat-icon {
+      font-size: 3rem;
+      margin-bottom: var(--space-4);
+      opacity: 0.5;
+    }
+
+    .chat-form-container {
+      padding: var(--space-4);
+      background: white;
+      border-top: 2px solid var(--color-neutral-200);
+    }
+
+    #chat-form {
+      display: flex;
+      gap: var(--space-2);
+      width: 100%;
+    }
+
+    #chat-message {
+      flex: 1;
+      padding: var(--space-3);
+      border: 2px solid var(--color-neutral-200);
+      border-radius: var(--border-radius-lg);
+      font-size: var(--font-size-base);
+      resize: none;
+      max-height: 120px;
+      transition: border-color var(--transition-base);
+    }
+
+    #chat-message:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(56, 161, 105, 0.1);
+    }
+
+    .send-btn {
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--border-radius-lg);
+      cursor: pointer;
+      font-weight: var(--font-weight-bold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      transition: all var(--transition-base);
+      min-width: 100px;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      background: var(--color-primary-dark);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .send-btn:disabled {
+      background: var(--color-neutral-400);
+      cursor: not-allowed;
+    }
+
+    @keyframes messageSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    #chat-box::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #chat-box::-webkit-scrollbar-thumb {
+      background: var(--color-primary);
+      border-radius: var(--border-radius-full);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="{{ url_for('static', filename='logo.svg') }}" alt="Share My Ride logo" />
+    <nav>
+      <a href="{{ url_for('main.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </nav>
+  </header>
+
+  <main class="chat-container animate-fade-in-up">
+    <div class="chat-header">
+      <h2><i class="fas fa-comments"></i> Chat for Ride</h2>
+      <h3 class="chat-route">
+        <strong><i class="fas fa-map-marker-alt"></i> {{ ride.source }}</strong>
+        <i class="fas fa-arrow-right"></i>
+        <strong><i class="fas fa-map-marker-alt"></i> {{ ride.destination }}</strong>
+      </h3>
+    </div>
+
+    <div id="chat-box">
+      {% if messages %}
+        {% for msg in messages %}
+          <div class="msg {% if msg.is_self %}self{% else %}other{% endif %}">
+            <div class="sender">
+              <i class="fas fa-{% if msg.is_self %}user-circle{% else %}users{% endif %}"></i>
+              {{ msg.sender_username }}
+            </div>
+            <div class="message_text">{{ msg.text }}</div>
+            <div class="timestamp">{{ msg.timestamp }}</div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-chat" id="empty-state">
+          <div class="empty-chat-icon"><i class="fas fa-comments"></i></div>
+          <p class="empty-chat-text">No messages yet.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="chat-form-container">
+      <form id="chat-form" autocomplete="off">
+        <textarea id="chat-message" placeholder="Type your message here..." required rows="2"></textarea>
+        <button type="submit" class="send-btn" id="send-btn"><i class="fas fa-paper-plane"></i> Send</button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    const socket = io();
+    const rideId = {{ ride.id }};
+    const userId = {{ session.user_id }};
+    const username = "{{ session.username }}";
+    
+    const chatForm = document.getElementById('chat-form');
+    const chatMessage = document.getElementById('chat-message');
+    const chatBox = document.getElementById('chat-box');
+    const sendBtn = document.getElementById('send-btn');
+
+    function removeEmptyState() {
+      const emptyState = document.getElementById('empty-state');
+      if (emptyState) emptyState.remove();
+    }
+
+    function scrollToBottom() {
+      setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 0);
+    }
+
+    function createMessageElement(data, isSelf, isPending = false) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `msg ${isSelf ? 'self' : 'other'} ${isPending ? 'pending' : ''}`;
+      msgDiv.dataset.messageId = data.messageId;
+      
+      msgDiv.innerHTML = `
+        <div class="sender">
+          <i class="fas fa-${isSelf ? 'user-circle' : 'users'}"></i> ${data.sender_username}
+        </div>
+        <div class="message_text">${data.text}</div>
+        <div class="timestamp">${data.timestamp}</div>
+      `;
+      
+      return msgDiv;
+    }
+
+    // OPTIMISTIC UPDATE: Show message immediately for sender
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const message = chatMessage.value.trim();
+      
+      if (message && !sendBtn.disabled) {
+        sendBtn.disabled = true;
+        removeEmptyState();
+        
+        const currentTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const tempId = 'temp-' + Date.now();
+        
+        // SHOW MESSAGE IMMEDIATELY on sender's screen
+        const msgData = {
+          sender_username: username,
+          sender_id: userId,
+          text: message,
+          timestamp: currentTime,
+          messageId: tempId
+        };
+        
+        const msgElement = createMessageElement(msgData, true, true);
+        chatBox.appendChild(msgElement);
+        scrollToBottom();
+
+        // Send to backend
+        socket.emit('send_message', {
+          ride_id: rideId,
+          user_id: userId,
+          message: message
+        });
+        
+        chatMessage.value = '';
+        
+        setTimeout(() => { sendBtn.disabled = false; }, 300);
+      }
+    });
+
+    // Receive messages from others
+    socket.on('new_message', (data) => {
+      const isSelf = data.sender_id === userId;
+      
+      // Only add if it's from another user (we already displayed our own)
+      if (!isSelf) {
+        removeEmptyState();
+        const msgElement = createMessageElement(data, false, false);
+        chatBox.appendChild(msgElement);
+        scrollToBottom();
+      }
+    });
+
+    socket.on('connect', () => {
+      console.log('Connected');
+      socket.emit('join_ride', { ride_id: rideId });
+    });
+
+    window.addEventListener('load', () => {
+      chatMessage.focus();
+      scrollToBottom();
+    });
+
+    chatMessage.addEventListener('input', () => {
+      chatMessage.style.height = 'auto';
+      chatMessage.style.height = Math.min(chatMessage.scrollHeight, 120) + 'px';
+    });
+  </script>
+</body>
+</html>

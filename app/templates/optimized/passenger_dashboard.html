@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Passenger Dashboard - Share My Ride</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:700,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <header>
+    <img src="{{ url_for('static', filename='logo.svg') }}" alt="Share My Ride logo" />
+    <nav>
+      <a href="{{ url_for('main.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="{{ url_for('main.notifications') }}">
+        <i class="fas fa-bell"></i> Notifications
+        {% if unread_notifications_count > 0 %}
+          <span class="notification-badge">{{ unread_notifications_count }}</span>
+        {% endif %}
+      </a>
+      <a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </nav>
+  </header>
+
+  <main class="container animate-fade-in-up">
+    <h2><i class="fas fa-user-circle"></i> Welcome, {{ session.username }} (Passenger) 👋</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, message in messages %}
+            <li class="{{ category }}">
+              <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+              {{ message }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    
+    <div class="stats-container">
+      <div class="stat-card">
+        <div class="stat-number">{{ available_rides|length }}</div>
+        <div class="stat-label">Available Rides</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ booked_rides|length }}</div>
+        <div class="stat-label">Booked Rides</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ booked_rides|selectattr('is_completed')|list|length }}</div>
+        <div class="stat-label">Completed Rides</div>
+      </div>
+    </div>
+    
+    <section>
+      <h3><i class="fas fa-search"></i> Book a New Bike Ride 🗺️</h3>
+      
+      <div class="card" style="margin-bottom: var(--space-6); padding: var(--space-4);">
+        <div class="filter-container" style="background: none; padding: 0; box-shadow: none; display: flex; gap: var(--space-3); flex-wrap: wrap;">
+          <input type="text" id="search-input" class="filter-input" placeholder="Search by destination...">
+          <select id="date-filter" class="filter-select">
+            <option value="">All Dates</option>
+            <option value="today">Today</option>
+            <option value="tomorrow">Tomorrow</option>
+            <option value="week">This Week</option>
+          </select>
+          <select id="seats-filter" class="filter-select">
+            <option value="">Any Seats</option>
+            <option value="1">1+ Seat</option>
+            <option value="2">2+ Seats</option>
+            <option value="3">3+ Seats</option>
+          </select>
+          <button id="filter-btn" class="btn btn-primary">Apply Filters</button>
+          <button id="reset-btn" class="btn btn-ghost">Reset</button>
+        </div>
+      </div>
+      
+      <ul id="available-rides-list">
+        {% for ride_item in available_rides %}
+          <li class="card ride-item" data-destination="{{ ride_item.ride.destination|lower }}" data-date="{{ ride_item.ride.ride_date }}" data-seats="{{ ride_item.ride.seats_available }}">
+            <div class="ride-details">
+              <div class="ride-route">
+                <i class="fas fa-map-marker-alt"></i> 
+                <strong>{{ ride_item.ride.source }}</strong> to <strong>{{ ride_item.ride.destination }}</strong>
+              </div>
+              <div class="ride-meta">
+                <div class="ride-meta-item">
+                  <i class="fas fa-calendar"></i> {{ ride_item.ride.ride_date }}
+                </div>
+                <div class="ride-meta-item">
+                  <i class="fas fa-clock"></i> {{ ride_item.ride.ride_time.strftime("%H:%M") }} - {{ ride_item.ride.ride_end_time.strftime("%H:%M") if ride_item.ride.ride_end_time else 'N/A' }}
+                </div>
+                <div class="ride-meta-item">
+                  <i class="fas fa-user"></i> {{ ride_item.rider_username }}
+                </div>
+                <div class="ride-meta-item">
+                  <i class="fas fa-venus-mars"></i> Prefers: {{ ride_item.ride.rider_gender_preference }}
+                </div>
+                <div class="ride-meta-item">
+                  <i class="fas fa-chair"></i> {{ ride_item.ride.seats_available }} seat{{ 's' if ride_item.ride.seats_available != 1 else '' }} left
+                </div>
+              </div>
+            </div>
+            <div class="ride-actions">
+              <form method="post" action="{{ url_for('rides.book_ride', ride_id=ride_item.ride.id) }}" class="booking-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn btn-primary book-btn">
+                  <i class="fas fa-plus-circle"></i>
+                  <span class="btn-text">Book Ride</span>
+                  <div class="spinner"></div>
+                </button>
+              </form>
+              <a class="btn btn-secondary" href="{{ url_for('rides.ride_chat', ride_id=ride_item.ride.id) }}">
+                <i class="fas fa-comments"></i> Chat
+              </a>
+            </div>
+          </li>
+        {% else %}
+          <li class="card" style="text-align: center; color: var(--color-neutral-500);">
+            <i class="fas fa-search" style="font-size: 3rem; margin-bottom: var(--space-4); display: block;"></i>
+            No available rides at the moment.
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section>
+      <h3><i class="fas fa-check-circle"></i> Your Booked Bike Rides ✅</h3>
+      <ul id="booked-rides-list">
+        {% for ride_item in booked_rides %}
+          <li class="card ride-item {% if ride_item.is_completed %}completed{% endif %}" data-destination="{{ ride_item.ride.destination|lower }}" data-date="{{ ride_item.ride.ride_date }}">
+            <div class="ride-details">
+              <div class="ride-route">
+                <i class="fas fa-map-marker-alt"></i> 
+                <strong>{{ ride_item.ride.source }}</strong> to <strong>{{ ride_item.ride.destination }}</strong>
+              </div>
+              <div class="ride-meta">
+                <div class="ride-meta-item">
+                  <i class="fas fa-calendar"></i> {{ ride_item.ride.ride_date }}
+                </div>
+                <div class="ride-meta-item">
+                  <i class="fas fa-clock"></i> {{ ride_item.ride.ride_time.strftime("%H:%M") }} - {{ ride_item.ride.ride_end_time.strftime("%H:%M") if ride_item.ride.ride_end_time else 'N/A' }}
+                </div>
+                <div class="ride-meta-item">
+                  <i class="fas fa-user"></i> {{ ride_item.rider_username }}
+                </div>
+                <div class="ride-meta-item">
+                  <i class="fas fa-info-circle"></i> 
+                  <strong>{% if ride_item.is_completed %}Completed{% else %}Upcoming{% endif %}</strong>
+                </div>
+              </div>
+            </div>
+            <div class="ride-actions">
+              {% if ride_item.is_completed %}
+                {% if not ride_item.is_rated %}
+                  <a class="btn btn-primary" href="{{ url_for('rides.rate_ride', ride_id=ride_item.ride.id) }}">
+                    <i class="fas fa-star"></i> Rate Ride
+                  </a>
+                {% else %}
+                  <span class="btn btn-ghost" style="cursor: default;">
+                    <i class="fas fa-check"></i> Rated!
+                  </span>
+                {% endif %}
+              {% else %}
+                <form method="post" action="{{ url_for('rides.cancel_booking', ride_id=ride_item.ride.id) }}" class="cancel-form">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <button type="submit" class="btn btn-danger cancel-btn">
+                    <i class="fas fa-times-circle"></i>
+                    <span class="btn-text">Cancel Booking</span>
+                    <div class="spinner"></div>
+                  </button>
+                </form>
+                <a class="btn btn-secondary" href="{{ url_for('rides.ride_chat', ride_id=ride_item.ride.id) }}">
+                  <i class="fas fa-comments"></i> Chat
+                </a>
+              {% endif %}
+            </div>
+          </li>
+        {% else %}
+          <li class="card" style="text-align: center; color: var(--color-neutral-500);">
+            <i class="fas fa-calendar-times" style="font-size: 3rem; margin-bottom: var(--space-4); display: block;"></i>
+            You have not booked any rides yet.
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </main>
+  
+  <!-- Confirmation Modal -->
+  <div id="confirm-modal" class="modal" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <i class="fas fa-exclamation-triangle" style="color: var(--color-warning);"></i>
+        <h3 class="modal-title" id="modal-title">Confirm Action</h3>
+      </div>
+      <div class="modal-body">
+        <p id="modal-message">Are you sure you want to proceed?</p>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-cancel" class="btn btn-ghost">Cancel</button>
+        <button id="modal-confirm" class="btn btn-danger">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Filter functionality
+      const searchInput = document.getElementById('search-input');
+      const dateFilter = document.getElementById('date-filter');
+      const seatsFilter = document.getElementById('seats-filter');
+      const filterBtn = document.getElementById('filter-btn');
+      const resetBtn = document.getElementById('reset-btn');
+      const availableRidesList = document.getElementById('available-rides-list');
+      const bookedRidesList = document.getElementById('booked-rides-list');
+      
+      // Modal elements
+      const modal = document.getElementById('confirm-modal');
+      const modalTitle = document.getElementById('modal-title');
+      const modalMessage = document.getElementById('modal-message');
+      const modalCancel = document.getElementById('modal-cancel');
+      const modalConfirm = document.getElementById('modal-confirm');
+      
+      let currentForm = null;
+      
+      function filterRides() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const dateValue = dateFilter.value;
+        const seatsValue = seatsFilter.value;
+        
+        const availableRides = availableRidesList.querySelectorAll('.ride-item');
+        let availableCount = 0;
+        
+        availableRides.forEach(ride => {
+          if (shouldShowRide(ride, searchTerm, dateValue, seatsValue)) {
+            ride.style.display = 'flex';
+            availableCount++;
+          } else {
+            ride.style.display = 'none';
+          }
+        });
+        
+        const noResultsMsg = availableRidesList.querySelector('.card:not(.ride-item)');
+        if (noResultsMsg) {
+          noResultsMsg.style.display = availableCount > 0 ? 'none' : 'block';
+        }
+        
+        const bookedRides = bookedRidesList.querySelectorAll('.ride-item');
+        let bookedCount = 0;
+        bookedRides.forEach(ride => {
+          if (shouldShowRide(ride, searchTerm, dateValue, seatsValue)) {
+            ride.style.display = 'flex';
+            bookedCount++;
+          } else {
+            ride.style.display = 'none';
+          }
+        });
+        const noBookedResultsMsg = bookedRidesList.querySelector('.card:not(.ride-item)');
+        if (noBookedResultsMsg) {
+          noBookedResultsMsg.style.display = bookedCount > 0 ? 'none' : 'block';
+        }
+      }
+
+      function shouldShowRide(ride, searchTerm, dateValue, seatsValue) {
+        const destination = ride.dataset.destination;
+        const date = ride.dataset.date;
+        const seats = ride.dataset.seats;
+        
+        if (searchTerm && !destination.includes(searchTerm)) return false;
+        if (seatsValue && seats < parseInt(seatsValue)) return false;
+        if (dateValue && !isDateInRange(date, dateValue)) return false;
+        
+        return true;
+      }
+
+      function isDateInRange(rideDateStr, filter) {
+        const rideDate = new Date(rideDateStr);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (filter === 'today') {
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          return rideDate >= today && rideDate < tomorrow;
+        } else if (filter === 'tomorrow') {
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const dayAfter = new Date(tomorrow);
+          dayAfter.setDate(dayAfter.getDate() + 1);
+          return rideDate >= tomorrow && rideDate < dayAfter;
+        } else if (filter === 'week') {
+          const nextWeek = new Date(today);
+          nextWeek.setDate(nextWeek.getDate() + 7);
+          return rideDate >= today && rideDate < nextWeek;
+        }
+        return true;
+      }
+      
+      filterBtn.addEventListener('click', filterRides);
+      resetBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        dateFilter.value = '';
+        seatsFilter.value = '';
+        filterRides();
+      });
+      
+      // Form submission with loading state
+      document.querySelectorAll('.booking-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          const btn = this.querySelector('.book-btn');
+          btn.classList.add('loading');
+          btn.disabled = true;
+          setTimeout(() => this.submit(), 800);
+        });
+      });
+      
+      // Cancel booking with confirmation modal
+      document.querySelectorAll('.cancel-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          currentForm = this;
+          modalTitle.textContent = 'Cancel Booking';
+          modalMessage.textContent = 'Are you sure you want to cancel this booking?';
+          modal.style.display = 'flex';
+          modal.setAttribute('aria-hidden', 'false');
+        });
+      });
+      
+      // Modal event handlers
+      modalCancel.addEventListener('click', closeModal);
+      modalConfirm.addEventListener('click', function() {
+        if (currentForm) {
+          const btn = currentForm.querySelector('.cancel-btn');
+          btn.classList.add('loading');
+          btn.disabled = true;
+          setTimeout(() => currentForm.submit(), 800);
+        }
+      });
+      
+      window.addEventListener('click', function(e) {
+        if (e.target === modal) closeModal();
+      });
+      
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
+      });
+
+      function closeModal() {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        currentForm = null;
+      }
+    });
+  </script>
+</body>
+</html>

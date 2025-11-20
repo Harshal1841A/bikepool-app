@@ -1,0 +1,44 @@
+{% extends "email/base_email.html" %}
+
+{% block content %}
+<p>Hi {{ username }},</p>
+<h1>Booking Confirmed!</h1>
+<p>You have successfully booked a seat on a ride.</p>
+
+<table border="0" cellpadding="0" cellspacing="0"
+    style="width: 100%; margin-bottom: 20px; background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
+    <tr>
+        <td style="padding: 5px 0;"><strong>From:</strong> {{ ride.source }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 5px 0;"><strong>To:</strong> {{ ride.destination }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 5px 0;"><strong>Date:</strong> {{ ride.ride_date }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 5px 0;"><strong>Time:</strong> {{ ride.ride_time }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 5px 0;"><strong>Rider:</strong> {{ ride.rider.username }}</td>
+    </tr>
+</table>
+
+<p>You can view your booking details or chat with the rider on your dashboard.</p>
+
+<table border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
+    <tbody>
+        <tr>
+            <td align="left">
+                <table border="0" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td> <a href="{{ url_for('main.dashboard', _external=True) }}" target="_blank">Go to
+                                Dashboard</a> </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<p>Safe travels!</p>
+{% endblock %}
